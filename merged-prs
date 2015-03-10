@@ -1,0 +1,109 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Script used to determine merges between branches
+ * All OSX computers have PHP, so use PHP!
+ */
+
+// Require Configuration
+$config = json_decode(file_get_contents('config.json'), true);
+if (!$config) {
+    throw new Exception('config.json file missing!');
+}
+
+/**
+ * Accept arguments as the Git hashes to use to determine merged branches
+ */
+if ($argv[1] && $argv[2]) {
+    $output = [
+        $argv[1],
+        $argv[2],
+    ];
+} else {
+    /**
+     * Command Line Magic
+     * Determine previous two tags beginning with 'prod-' and get the list of branches
+     * merged (into master) between them. Then pull out the GitHub Issue IDs
+     */
+    exec('cd ' . $config['git']['base_dir'] . ' && git tags | grep ' . $config['git']['prod_tag_prefix'] . ' | tail -r -2', $output);
+}
+exec('cd ' . $config['git']['base_dir'] . ' && git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
+error_log("Script: Determining merged branches between the following tags: {$output[0]} {$output[1]}");
+
+/**
+ * Iterate through Shell Output and create array of the matching GitHub Issues IDs
+ */
+$issueList = [];
+foreach ($result as $mergedPr) {
+    preg_match('/#([0-9]+)/', $mergedPr, $matches);
+    if (!empty($matches[1])) {
+        array_push($issueList, $matches[1]);
+    }
+}
+asort($issueList);
+
+if (empty($issueList)) {
+    error_log("No Github issues found between {$output[0]}...{$output[1]}");
+    exit;
+}
+
+// Curl Parameters / Output Message
+$baseUrl = $config['github']['api_host'] . $config['api_request_path'];
+$message = '';
+
+/**
+ * Call GitHub API and iterate through issues listed above in order to get
+ * PR contents to determine inclusion of JIRA issues for the WEB Repo
+ */
+
+foreach ($issueList as $issueId) {
+    $issueInfo = '';
+    $url = $config['github']['api_host'] . $config['github']['api_request_path'] . '/' . $issueId;
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: token ' . $config['github']['user_api_key'],
+        'User-Agent: ' . $config['github']['user_agent']
+    ]);
+    $curlResult = curl_exec($ch);
+    $result = json_decode($curlResult, true);
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+        error_log('ERROR, invalid response received from GitHub, aborting for this issue:' . $issueId);
+        continue;
+    }
+
+    $gitHubIssueId     = $result['number'];
+    $gitHubIssueDesc   = $result['body'];
+    $gitHubIssueTitle  = $result['title'];
+    $gitHubIssueAuthor = $result['user']['login'];
+
+    // Deterine appropriate URLs to show (JIRA if available, default GH)
+    $jiraUrl = '';
+    $url = $config['github']['pr_path'] . substr($gitHubIssueId, 0);
+
+    // Check for JIRA Link
+    $matches = [];
+    preg_match('/(' . $config['jira']['project'] . '\-[0-9]+)/', $result['body'], $matches);
+    if (count($matches) > 0) {
+        $jiraUrl = $config['jira']['url'] . $matches[0];
+    }
+
+    // GitHub Data
+    $githubUser = $result['user']['login'];
+
+    // Flow User Name
+    $userMention = array_key_exists($githubUser, $config['slack']['users'])
+        ? $config['slack']['users'][$githubUser] : $githubUser;
+    $outputUrl = !empty($jiraUrl) ? $jiraUrl : $url;
+
+    // Determine issue
+    $issueInfo  = "#{$result['number']} (@{$userMention}): {$result['title']} ({$outputUrl})";
+    $message .=  "    " . $issueInfo . PHP_EOL;
+
+    // Output to console
+    echo "    " . $issueInfo . PHP_EOL;
+}

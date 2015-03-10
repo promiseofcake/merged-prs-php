@@ -1,0 +1,23 @@
+{
+  "jira": {
+    "project": "WEB",
+    "url": "https://issues.vsco.co/browse/"
+  },
+  "git": {
+    "base_dir": "~/vsco/web"
+  },
+  "github": {
+    "api_host": "https://api.github.com",
+    "api_request_path": "/repos/vsco/web/issues",
+    "pr_path": "https://github.com/vsco/web/pull/",
+    "user_agent": "@githubname",
+    "user_api_key": "GITHUBAPIKEY"
+  },
+  "slack": {
+    "apiKey" : null,
+    "channelId" : null,
+    "users": {
+      "githubName": "slackName"
+    }
+  }
+}
