@@ -15,8 +15,11 @@
     "user_api_key": "GITHUBAPIKEY"
   },
   "slack": {
-    "apiKey" : null,
-    "channelId" : null,
+    "notify": {
+      "channel": null,
+      "username": null,
+      "webhook_url": null
+    },
     "users": {
       "GITHUBUSERNAME": "slackName"
     }

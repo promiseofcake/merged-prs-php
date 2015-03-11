@@ -5,17 +5,17 @@
  * All OSX computers have PHP, so use PHP!
  */
 
-/**
- * Output message
- * @var string
- */
-$message = '';
-
 // Require Configuration
 $config = json_decode(file_get_contents('config.json'), true);
 if (!$config) {
     throw new Exception('config.json file missing!');
 }
+
+/**
+ * Output message
+ * @var string
+ */
+$message = '';
 
 /**
  * Accept arguments as the Git hashes to use to determine merged branches
@@ -53,17 +53,11 @@ if (empty($issueList)) {
     exit;
 }
 
-// Curl Parameters / Output Message
-$baseUrl = $config['github']['api_host'] . $config['api_request_path'];
-
-
 /**
  * Call GitHub API and iterate through issues listed above in order to get
  * PR contents to determine inclusion of JIRA issues for the WEB Repo
  */
-
 $message = "Merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL;
-
 foreach ($issueList as $issueId) {
     $issueInfo = '';
     $url = $config['github']['api_host'] . $config['github']['api_request_path'] . '/' . $issueId;
@@ -114,3 +108,35 @@ foreach ($issueList as $issueId) {
 }
 
 echo $message;
+
+if (!empty($config['slack']['notify']['webhook_url'])) {
+    notifySlack($config, codeBlock($message));
+}
+
+function codeBlock($message)
+{
+    $message = "```{$message}```";
+    return $message;
+}
+
+function notifySlack(array $config, $message)
+{
+    $postFields = [
+        'text'       => $message,
+        'channel'    => $config['slack']['notify']['channel'],
+        'username'   => $config['slack']['notify']['username'],
+        'icon_emoji' => $config['slack']['notify']['icon_emoji'],
+    ];
+
+    $payload = 'payload=' . json_encode($postFields);
+
+    $ch = curl_init($config['slack']['notify']['webhook_url']);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+    curl_setopt($ch, CURLOPT_POSTFIELDS,  $payload);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $curlResult = curl_exec($ch);
+    $result = json_decode($curlResult, true);
+
+    var_dump($curlResult);
+}
+
