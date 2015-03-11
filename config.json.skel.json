@@ -4,20 +4,21 @@
     "url": "https://issues.vsco.co/browse/"
   },
   "git": {
-    "base_dir": "~/vsco/web"
+    "base_dir": "~/vsco/web",
+    "prod_tag_prefix": "prod-"
   },
   "github": {
     "api_host": "https://api.github.com",
     "api_request_path": "/repos/vsco/web/issues",
     "pr_path": "https://github.com/vsco/web/pull/",
-    "user_agent": "@githubname",
+    "user_agent": "GITHUBUSERNAME",
     "user_api_key": "GITHUBAPIKEY"
   },
   "slack": {
     "apiKey" : null,
     "channelId" : null,
     "users": {
-      "githubName": "slackName"
+      "GITHUBUSERNAME": "slackName"
     }
   }
 }

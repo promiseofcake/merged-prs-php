@@ -5,6 +5,12 @@
  * All OSX computers have PHP, so use PHP!
  */
 
+/**
+ * Output message
+ * @var string
+ */
+$message = '';
+
 // Require Configuration
 $config = json_decode(file_get_contents('config.json'), true);
 if (!$config) {
@@ -28,7 +34,7 @@ if ($argv[1] && $argv[2]) {
     exec('cd ' . $config['git']['base_dir'] . ' && git tags | grep ' . $config['git']['prod_tag_prefix'] . ' | tail -r -2', $output);
 }
 exec('cd ' . $config['git']['base_dir'] . ' && git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
-error_log("Script: Determining merged branches between the following tags: {$output[0]} {$output[1]}");
+echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
 
 /**
  * Iterate through Shell Output and create array of the matching GitHub Issues IDs
@@ -49,12 +55,14 @@ if (empty($issueList)) {
 
 // Curl Parameters / Output Message
 $baseUrl = $config['github']['api_host'] . $config['api_request_path'];
-$message = '';
+
 
 /**
  * Call GitHub API and iterate through issues listed above in order to get
  * PR contents to determine inclusion of JIRA issues for the WEB Repo
  */
+
+$message = "Merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL;
 
 foreach ($issueList as $issueId) {
     $issueInfo = '';
@@ -102,8 +110,7 @@ foreach ($issueList as $issueId) {
 
     // Determine issue
     $issueInfo  = "#{$result['number']} (@{$userMention}): {$result['title']} ({$outputUrl})";
-    $message .=  "    " . $issueInfo . PHP_EOL;
-
-    // Output to console
-    echo "    " . $issueInfo . PHP_EOL;
+    $message .=  "  " . $issueInfo . PHP_EOL;
 }
+
+echo $message;
