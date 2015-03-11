@@ -110,10 +110,10 @@ foreach ($issueList as $issueId) {
 echo $message;
 
 if (!empty($config['slack']['notify']['webhook_url'])) {
-    notifySlack($config, codeBlock($message));
+    notifySlack($config, stringToCodeBlock($message));
 }
 
-function codeBlock($message)
+function stringToCodeBlock($message)
 {
     $message = "```{$message}```";
     return $message;
