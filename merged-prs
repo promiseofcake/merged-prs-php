@@ -11,6 +11,21 @@ if (!$config) {
     throw new Exception('config.json file missing!');
 }
 
+$notifySlack = true;
+
+// Get command line options
+$options = getopt('', ['test']);
+if (isset($options['test']) && $options['test'] === false) {
+    $notifySlack = false;
+
+    unset($argv[array_search('--test', $argv)]);
+    $argv = array_values($argv);
+}
+
+////////////////////////////////////////////////////
+// Processing
+////////////////////////////////////////////////////
+
 /**
  * Output message
  * @var string
@@ -109,7 +124,7 @@ foreach ($issueList as $issueId) {
 
 echo $message;
 
-if (!empty($config['slack']['notify']['webhook_url'])) {
+if ($notifySlack && !empty($config['slack']['notify']['webhook_url'])) {
     notifySlack($config, stringToCodeBlock($message));
 }
 
