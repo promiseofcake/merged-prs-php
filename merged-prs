@@ -128,15 +128,19 @@ function notifySlack(array $config, $message)
         'icon_emoji' => $config['slack']['notify']['icon_emoji'],
     ];
 
-    $payload = 'payload=' . json_encode($postFields);
+    $payload = json_encode($postFields);
 
     $ch = curl_init($config['slack']['notify']['webhook_url']);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $payload);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($payload)
+    ]);
     $curlResult = curl_exec($ch);
     $result = json_decode($curlResult, true);
 
-    var_dump($curlResult);
+    echo 'CURL Result: ' . $curlResult . PHP_EOL;
 }
 
