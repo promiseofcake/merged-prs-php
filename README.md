@@ -13,6 +13,10 @@ Script can be used between any two hashes, tags, or branches
 Output will print to console as well as notify Slack if configured in config.json.
 By default determines the diff between the previous two production tags `prod-` (as set in config).
 
+If you wish to not notify slack, please pass `--test` as the first parameter
+
+`./merged-prs --test <PREV> <NEW>`
+
 ### Example
 
 ```
@@ -20,10 +24,10 @@ $ ./merged-prs master master~2
 Determining merged branches between the following hashes: master master~2
 
 Merged PRs between the following hashes: master master~2
-  #1875 (@chris): Fix CreateEncryptedFile for Keys layout (https://github.com/vsco/web/pull/1875)
-  #1877 (@anthony): updating the prod password as told by chef prod.json (https://github.com/vsco/web/pull/1877)
-  #1888 (@bshack): Fix s70 copy paste journal title change (https://github.com/vsco/web/pull/1888)
-  #1890 (@bshack): update title on home page to reflect (https://github.com/vsco/web/pull/1890)
-  #1891 (@bshack): Fix s71 text to download focus (https://issues.vsco.co/browse/WEB-6793)
+  #1875 (@chris): Fix CreateEncryptedFile for Keys layout (https://github.com/promiseofcake/web/pull/1875)
+  #1877 (@anthony): updating the prod password as told by chef prod.json (https://github.com/promiseofcake/web/pull/1877)
+  #1888 (@brandon): Fix copy paste journal title change (https://github.com/promiseofcake/web/pull/1888)
+  #1890 (@brandon): update title on home page to reflect (https://github.com/promiseofcake/web/pull/1890)
+  #1891 (@brandon): Fix text to download focus (https://issues.promiseofcake.co/browse/WEB-6793)
 ```
 

@@ -11,6 +11,21 @@ if (!$config) {
     throw new Exception('config.json file missing!');
 }
 
+$notifySlack = true;
+
+// Get command line options
+$options = getopt('', ['test']);
+if (isset($options['test']) && $options['test'] === false) {
+    $notifySlack = false;
+
+    unset($argv[array_search('--test', $argv)]);
+    $argv = array_values($argv);
+}
+
+////////////////////////////////////////////////////
+// Processing
+////////////////////////////////////////////////////
+
 /**
  * Output message
  * @var string
@@ -109,7 +124,7 @@ foreach ($issueList as $issueId) {
 
 echo $message;
 
-if (!empty($config['slack']['notify']['webhook_url'])) {
+if ($notifySlack && !empty($config['slack']['notify']['webhook_url'])) {
     notifySlack($config, stringToCodeBlock($message));
 }
 
@@ -128,15 +143,19 @@ function notifySlack(array $config, $message)
         'icon_emoji' => $config['slack']['notify']['icon_emoji'],
     ];
 
-    $payload = 'payload=' . json_encode($postFields);
+    $payload = json_encode($postFields);
 
     $ch = curl_init($config['slack']['notify']['webhook_url']);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $payload);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($payload)
+    ]);
     $curlResult = curl_exec($ch);
     $result = json_decode($curlResult, true);
 
-    var_dump($curlResult);
+    echo 'CURL Result: ' . $curlResult . PHP_EOL;
 }
 
