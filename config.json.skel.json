@@ -1,16 +1,16 @@
 {
   "jira": {
-    "project": "WEB",
-    "url": "https://issues.vsco.co/browse/"
+    "project": "YOURGITHUBREPONAME",
+    "url": "YOURJIRAWEBLINK"
   },
   "git": {
-    "base_dir": "~/vsco/web",
-    "prod_tag_prefix": "prod-"
+    "base_dir": "YOURLOCALREPO",
+    "prod_tag_prefix": "YOURPRODTAGPREFIX"
   },
   "github": {
     "api_host": "https://api.github.com",
-    "api_request_path": "/repos/vsco/web/issues",
-    "pr_path": "https://github.com/vsco/web/pull/",
+    "api_request_path": "YOURAPIREQUESTPATH",
+    "pr_path": "YOURGITHUBREPPRPATH",
     "user_agent": "GITHUBUSERNAME",
     "user_api_key": "GITHUBAPIKEY"
   },
