@@ -65,8 +65,14 @@ if (!empty($argv[1]) && !empty($argv[2])) {
      */
     exec('git -C ' . $baseDir . ' tags | grep ' . $config['git']['prod_tag_prefix'] . ' | tail -r -2', $output);
 }
+if (empty($output[0]) || empty($output[1])) {
+    error_log("No hashes found, exiting.");
+    exit;
+}
+
 exec('git -C ' . $baseDir . ' log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
-echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
+echo "Executing for: {$baseDir}" . PHP_EOL;
+echo "Determining merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
 
 /**
  * Iterate through Shell Output and create array of the matching GitHub Issues IDs
