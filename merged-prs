@@ -104,7 +104,7 @@ foreach ($issueList as $issueId) {
 
     // Check for JIRA Link
     $matches = [];
-    preg_match('/(' . $config['jira']['project'] . '\-[0-9]+)/', $result['body'], $matches);
+    preg_match('/([A-Za-z]+\-[0-9]+)/', $result['body'], $matches);
     if (count($matches) > 0) {
         $jiraUrl = $config['jira']['url'] . $matches[0];
     }

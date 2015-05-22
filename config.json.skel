@@ -1,7 +1,6 @@
 {
   "jira": {
-    "project": "YOURGITHUBREPONAME",
-    "url": "YOURJIRAWEBLINK"
+    "url": "JIRAWEBLINKBASE"
   },
   "git": {
     "base_dir": "YOURLOCALREPO",
