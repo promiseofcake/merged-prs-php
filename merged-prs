@@ -35,7 +35,7 @@ $message = '';
 /**
  * Accept arguments as the Git hashes to use to determine merged branches
  */
-if ($argv[1] && $argv[2]) {
+if (!empty($argv[1]) && !empty($argv[2])) {
     $output = [
         $argv[1],
         $argv[2],
