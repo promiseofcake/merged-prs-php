@@ -1,10 +1,9 @@
 {
   "jira": {
-    "project": "YOURGITHUBREPONAME",
-    "url": "YOURJIRAWEBLINK"
+    "url": "JIRAWEBLINKBASE"
   },
   "git": {
-    "base_dir": "YOURLOCALREPO",
+    "base_dir": "OPTIONALBASEDIRTODEFAULTTO",
     "prod_tag_prefix": "YOURPRODTAGPREFIX"
   },
   "github": {
