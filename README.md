@@ -8,15 +8,31 @@ Outputs to console and notify's slack if configured. Links to JIRA issues for yo
 
 Written in PHP since it's installed on all OSX machines by default. Also written procedurally to keep it extremely simple.
 
+## Installation
+In order to use the `merged-prs` tool it will need to exist in your `$PATH`.
+
+* Clone the repo to a local path:
+
+```
+git clone git@github.com:promiseofcake/merged-prs-php.git
+```
+
+* Add the cloned path to your `$PATH` on a new shell or in your `.bashrc` or similar:
+
+```
+export PATH=$PATH:/path/to/merged-prs-php
+```
+
+
 ## Usage
-Script can be used between any two hashes, tags, or branches
+Script can be used within a Git repository between any two hashes, tags, or branches
 
 `merged-prs <PREV> <NEW>`
 
-Output will print to console as well as notify Slack if configured in config.json.
-By default determines the diff between the previous two production tags `prod-` (as set in config).
+Output will print to console as well as notify Slack if configured in `config/config-user.php`.
+By default, determines the diff between the previous two production tags `prod-` (as set in config).
 
-If you wish to not notify slack, please pass `--test` as the first parameter
+If you wish to not notify slack, please pass `--test` as the first parameter and it will only output to console.
 
 `merged-prs --test <PREV> <NEW>`
 
