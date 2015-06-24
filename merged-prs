@@ -6,12 +6,12 @@
  */
 
 // Require Configuration
-$config = json_decode(file_get_contents(__DIR__ . '/config.json'), true);
+$config = require __DIR__ . '/config/config.php';
 if (!$config) {
-    throw new Exception('config.json file missing!');
+    throw new Exception('Config missing!');
 }
 
-$notifySlack = true;
+$notifySlack = $config['slack']['active'];
 
 // Get command line options
 $options = getopt('', ['test']);
@@ -98,7 +98,15 @@ if (empty($issueList)) {
 $message = "Merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL;
 foreach ($issueList as $issueId) {
     $issueInfo = '';
-    $url = $config['github']['api_host'] . $config['github']['api_request_path'] . '/' . $issueId;
+
+    $url = implode('/', [
+        $config['github']['api_host'],
+        $config['github']['api_request_base'],
+        $config['github']['organization'],
+        $repository,
+        $config['github']['api_issues_path'],
+        $issueId
+    ]);
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
@@ -123,21 +131,28 @@ foreach ($issueList as $issueId) {
 
     // Deterine appropriate URLs to show (JIRA if available, default GH)
     $jiraUrl = '';
-    $url = $config['github']['pr_path'] . substr($gitHubIssueId, 0);
 
-    // Check for JIRA Link
+    $url = implode('/', [
+        $config['github']['web_host'],
+        $config['github']['organization'],
+        $repository,
+        $config['github']['web_pr_path'],
+        substr($gitHubIssueId, 0)
+    ]);
+
+    // Check for JIRA Link in the form of PROJECT-ISSUEID
     $matches = [];
     preg_match('/([A-Za-z]+\-[0-9]+)/', $result['body'], $matches);
     if (count($matches) > 0) {
-        $jiraUrl = $config['jira']['url'] . $matches[0];
+        $jiraUrl = $config['jira']['base_url'] . $matches[0];
     }
 
     // GitHub Data
     $githubUser = $result['user']['login'];
 
     // Flow User Name
-    $userMention = array_key_exists($githubUser, $config['slack']['users'])
-        ? $config['slack']['users'][$githubUser] : $githubUser;
+    $userMention = array_key_exists($githubUser, $config['slack']['user_map'])
+        ? $config['slack']['user_map'][$githubUser] : $githubUser;
     $outputUrl = !empty($jiraUrl) ? $jiraUrl : $url;
 
     // Determine issue
@@ -147,7 +162,7 @@ foreach ($issueList as $issueId) {
 
 echo $message;
 
-if ($notifySlack && !empty($config['slack']['notify']['webhook_url'])) {
+if ($notifySlack && !empty($config['slack']['webhook_url'])) {
     notifySlack($config, stringToCodeBlock($message));
 }
 
@@ -159,16 +174,19 @@ function stringToCodeBlock($message)
 
 function notifySlack(array $config, $message)
 {
+    // only one channel for now
+    $channel = $config['slack']['channels'][0];
+
     $postFields = [
         'text'       => $message,
-        'channel'    => $config['slack']['notify']['channel'],
-        'username'   => $config['slack']['notify']['username'],
-        'icon_emoji' => $config['slack']['notify']['icon_emoji'],
+        'channel'    => $channel,
+        'username'   => $config['slack']['username'],
+        'icon_emoji' => $config['slack']['icon_emoji'],
     ];
 
     $payload = json_encode($postFields);
 
-    $ch = curl_init($config['slack']['notify']['webhook_url']);
+    $ch = curl_init($config['slack']['webhook_url']);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $payload);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
