@@ -5,6 +5,9 @@
  * All OSX computers have PHP, so use PHP!
  */
 
+$directory = getcwd();
+$repository = basename($directory);
+
 // Require Configuration
 $config = require __DIR__ . '/config/config.php';
 if (!$config) {
@@ -22,6 +25,15 @@ if (isset($options['test']) && $options['test'] === false) {
     $argv = array_values($argv);
 }
 
+// Determine if we are in a Git Repo
+$result;
+$output;
+exec('git status > /dev/null 2>&1', $output, $result);
+if ($result !== 0) {
+    echo ($directory . ' is not a Git repo! Exiting') . PHP_EOL;
+    die();
+}
+
 ////////////////////////////////////////////////////
 // Processing
 ////////////////////////////////////////////////////
@@ -31,23 +43,6 @@ if (isset($options['test']) && $options['test'] === false) {
  * @var string
  */
 $message = '';
-
-/**
- * Determine BaseDir (use config, or local)
- */
-$currentDir = getcwd();
-$gitStatus = 0;
-$gitResult = [];
-exec("git -C {$currentDir} rev-parse > /dev/null 2>&1", $gitResult, $gitStatus);
-
-if ($gitStatus === 0) {
-    $baseDir = $currentDir;
-} elseif (isset($config['git']['base_dir'])) {
-    $baseDir = $config['git']['base_dir'];
-} else {
-    error_log("Current directory is not a GIT directory and no git.base_dir is set in config, exiting.");
-    exit;
-}
 
 /**
  * Accept arguments as the Git hashes to use to determine merged branches
@@ -63,16 +58,10 @@ if (!empty($argv[1]) && !empty($argv[2])) {
      * Determine previous two tags beginning with 'prod-' and get the list of branches
      * merged (into master) between them. Then pull out the GitHub Issue IDs
      */
-    exec('git -C ' . $baseDir . ' tags | grep ' . $config['git']['prod_tag_prefix'] . ' | tail -r -2', $output);
+    exec('git tags | grep ' . $config['git']['tag_prefix'] . ' | tail -r -2', $output);
 }
-if (empty($output[0]) || empty($output[1])) {
-    error_log("No hashes found, exiting.");
-    exit;
-}
-
-exec('git -C ' . $baseDir . ' log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
-echo "Executing for: {$baseDir}" . PHP_EOL;
-echo "Determining merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
+exec('git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
+echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
 
 /**
  * Iterate through Shell Output and create array of the matching GitHub Issues IDs
