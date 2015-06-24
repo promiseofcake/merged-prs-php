@@ -1,4 +1,7 @@
 # Merged PRs Script for PHP
+
+Version: 2.0
+
 Self executable script to determine merged PRs for your project.
 
 Outputs to console and notify's slack if configured. Links to JIRA issues for your project as well.
@@ -8,19 +11,19 @@ Written in PHP since it's installed on all OSX machines by default. Also written
 ## Usage
 Script can be used between any two hashes, tags, or branches
 
-`./merged-prs <PREV> <NEW>`
+`merged-prs <PREV> <NEW>`
 
 Output will print to console as well as notify Slack if configured in config.json.
 By default determines the diff between the previous two production tags `prod-` (as set in config).
 
 If you wish to not notify slack, please pass `--test` as the first parameter
 
-`./merged-prs --test <PREV> <NEW>`
+`merged-prs --test <PREV> <NEW>`
 
 ### Example
 
 ```
-$ ./merged-prs master master~2
+$ merged-prs master master~2
 Determining merged branches between the following hashes: master master~2
 
 Merged PRs between the following hashes: master master~2
