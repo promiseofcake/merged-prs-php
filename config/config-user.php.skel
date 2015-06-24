@@ -1,0 +1,25 @@
+<?php
+// config/config-user.php
+
+return [
+    'github' => [
+        'organization' => 'foo',
+        'user_agent'   => 'username',
+        'user_api_key' => 'githubtoken'
+    ],
+    'jira' => [
+        'base_url' => 'https://foo.atlassian.net/browse/'
+    ],
+    'slack' => [
+        'active'      => true,
+        'channels'    => [
+            '#general'
+        ],
+        'icon_emoji'  => ':rocket:',
+        'username'    => 'SLACKBOT',
+        'user_map'    => [
+            'githubtname' => 'slackname',
+        ],
+        'webhook_url' => 'https://hooks.slack.com/services/TOKENID'
+    ]
+];
