@@ -58,7 +58,7 @@ if (!empty($argv[1]) && !empty($argv[2])) {
      * Determine previous two tags beginning with 'prod-' and get the list of branches
      * merged (into master) between them. Then pull out the GitHub Issue IDs
      */
-    exec('git tags | grep ' . $config['git']['tag_prefix'] . ' | tail -r -2', $output);
+    exec('git tag -l | grep ' . $config['git']['tag_prefix'] . ' | tail -r -2', $output);
 }
 exec('git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
 echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
