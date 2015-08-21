@@ -46,6 +46,8 @@ $message = '';
 
 /**
  * Accept arguments as the Git hashes to use to determine merged branches
+ * If they do not exist, attempt to get the latest to production tags as
+ * defined in Config
  */
 if (!empty($argv[1]) && !empty($argv[2])) {
     $output = [
@@ -59,8 +61,12 @@ if (!empty($argv[1]) && !empty($argv[2])) {
      * merged (into master) between them. Then pull out the GitHub Issue IDs
      */
     exec('git tag -l | grep ' . $config['git']['tag_prefix'] . ' | tail -r -2', $output);
+    // due to the ordering of the tags, we need to swap their order for comparison
+    $output = array_reverse($output);
 }
-exec('git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
+
+// Obtain changelog
+exec('git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}..{$output[1]}", $result);
 echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
 
 /**

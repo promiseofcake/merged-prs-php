@@ -11,7 +11,7 @@ return [
         'base_url' => 'https://foo.atlassian.net/browse/'
     ],
     'slack' => [
-        'active'      => true,
+        'active'      => false,
         'channels'    => [
             '#general'
         ],
