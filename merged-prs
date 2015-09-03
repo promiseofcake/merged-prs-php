@@ -5,13 +5,16 @@
  * All OSX computers have PHP, so use PHP!
  */
 
+$directory = getcwd();
+$repository = basename($directory);
+
 // Require Configuration
-$config = json_decode(file_get_contents(__DIR__ . '/config.json'), true);
+$config = require __DIR__ . '/config/config.php';
 if (!$config) {
-    throw new Exception('config.json file missing!');
+    throw new Exception('Config missing!');
 }
 
-$notifySlack = true;
+$notifySlack = $config['slack']['active'];
 
 // Get command line options
 $options = getopt('', ['test']);
@@ -20,6 +23,15 @@ if (isset($options['test']) && $options['test'] === false) {
 
     unset($argv[array_search('--test', $argv)]);
     $argv = array_values($argv);
+}
+
+// Determine if we are in a Git Repo
+$result;
+$output;
+exec('git status > /dev/null 2>&1', $output, $result);
+if ($result !== 0) {
+    echo ($directory . ' is not a Git repo! Exiting') . PHP_EOL;
+    die();
 }
 
 ////////////////////////////////////////////////////
@@ -33,24 +45,9 @@ if (isset($options['test']) && $options['test'] === false) {
 $message = '';
 
 /**
- * Determine BaseDir (use config, or local)
- */
-$currentDir = getcwd();
-$gitStatus = 0;
-$gitResult = [];
-exec("git -C {$currentDir} rev-parse > /dev/null 2>&1", $gitResult, $gitStatus);
-
-if ($gitStatus === 0) {
-    $baseDir = $currentDir;
-} elseif (isset($config['git']['base_dir'])) {
-    $baseDir = $config['git']['base_dir'];
-} else {
-    error_log("Current directory is not a GIT directory and no git.base_dir is set in config, exiting.");
-    exit;
-}
-
-/**
  * Accept arguments as the Git hashes to use to determine merged branches
+ * If they do not exist, attempt to get the latest to production tags as
+ * defined in Config
  */
 if (!empty($argv[1]) && !empty($argv[2])) {
     $output = [
@@ -63,16 +60,14 @@ if (!empty($argv[1]) && !empty($argv[2])) {
      * Determine previous two tags beginning with 'prod-' and get the list of branches
      * merged (into master) between them. Then pull out the GitHub Issue IDs
      */
-    exec('git -C ' . $baseDir . ' tags | grep ' . $config['git']['prod_tag_prefix'] . ' | tail -r -2', $output);
-}
-if (empty($output[0]) || empty($output[1])) {
-    error_log("No hashes found, exiting.");
-    exit;
+    exec('git tag -l | grep ' . $config['git']['tag_prefix'] . ' | tail -r -2', $output);
+    // due to the ordering of the tags, we need to swap their order for comparison
+    $output = array_reverse($output);
 }
 
-exec('git -C ' . $baseDir . ' log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}...{$output[1]}", $result);
-echo "Executing for: {$baseDir}" . PHP_EOL;
-echo "Determining merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
+// Obtain changelog
+exec('git log --merges --grep="Merge pull request" --pretty=format:"%s" ' . "{$output[0]}..{$output[1]}", $result);
+echo "Determining merged branches between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL . PHP_EOL;
 
 /**
  * Iterate through Shell Output and create array of the matching GitHub Issues IDs
@@ -98,7 +93,15 @@ if (empty($issueList)) {
 $message = "Merged PRs between the following hashes: {$output[0]} {$output[1]}" . PHP_EOL;
 foreach ($issueList as $issueId) {
     $issueInfo = '';
-    $url = $config['github']['api_host'] . $config['github']['api_request_path'] . '/' . $issueId;
+
+    $url = implode('/', [
+        $config['github']['api_host'],
+        $config['github']['api_request_base'],
+        $config['github']['organization'],
+        $repository,
+        $config['github']['api_issues_path'],
+        $issueId
+    ]);
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
@@ -123,21 +126,28 @@ foreach ($issueList as $issueId) {
 
     // Deterine appropriate URLs to show (JIRA if available, default GH)
     $jiraUrl = '';
-    $url = $config['github']['pr_path'] . substr($gitHubIssueId, 0);
 
-    // Check for JIRA Link
+    $url = implode('/', [
+        $config['github']['web_host'],
+        $config['github']['organization'],
+        $repository,
+        $config['github']['web_pr_path'],
+        substr($gitHubIssueId, 0)
+    ]);
+
+    // Check for JIRA Link in the form of PROJECT-ISSUEID
     $matches = [];
     preg_match('/([A-Za-z]+\-[0-9]+)/', $result['body'], $matches);
     if (count($matches) > 0) {
-        $jiraUrl = $config['jira']['url'] . $matches[0];
+        $jiraUrl = $config['jira']['base_url'] . $matches[0];
     }
 
     // GitHub Data
     $githubUser = $result['user']['login'];
 
     // Flow User Name
-    $userMention = array_key_exists($githubUser, $config['slack']['users'])
-        ? $config['slack']['users'][$githubUser] : $githubUser;
+    $userMention = array_key_exists($githubUser, $config['slack']['user_map'])
+        ? $config['slack']['user_map'][$githubUser] : $githubUser;
     $outputUrl = !empty($jiraUrl) ? $jiraUrl : $url;
 
     // Determine issue
@@ -147,7 +157,7 @@ foreach ($issueList as $issueId) {
 
 echo $message;
 
-if ($notifySlack && !empty($config['slack']['notify']['webhook_url'])) {
+if ($notifySlack && !empty($config['slack']['webhook_url'])) {
     notifySlack($config, stringToCodeBlock($message));
 }
 
@@ -159,16 +169,19 @@ function stringToCodeBlock($message)
 
 function notifySlack(array $config, $message)
 {
+    // only one channel for now
+    $channel = $config['slack']['channels'][0];
+
     $postFields = [
         'text'       => $message,
-        'channel'    => $config['slack']['notify']['channel'],
-        'username'   => $config['slack']['notify']['username'],
-        'icon_emoji' => $config['slack']['notify']['icon_emoji'],
+        'channel'    => $channel,
+        'username'   => $config['slack']['username'],
+        'icon_emoji' => $config['slack']['icon_emoji'],
     ];
 
     $payload = json_encode($postFields);
 
-    $ch = curl_init($config['slack']['notify']['webhook_url']);
+    $ch = curl_init($config['slack']['webhook_url']);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $payload);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
